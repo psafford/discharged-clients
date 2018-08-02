@@ -1,0 +1,17 @@
+SELECT * 
+FROM (SELECT enrollments.program_id, enrollments.client_id,   
+admit_date, discharge_date, service_location, service_program, 
+max(contact_date) as last_contact, 
+EXTRACT(epoch from (select(now() - max(contact_date)))/86400)::int as days_since_contact
+FROM enrollments as enrollments
+LEFT JOIN (SELECT program_id, contact_date, contact_worker1_name 
+FROM contacts) as contacts on enrollments.program_id = contacts.program_id
+WHERE enrollments.discharge_date is null
+and enrollments.admit_date is not null
+group by enrollments.program_id, enrollments.client_id, 
+enrollments.admit_date, enrollments.discharge_date, enrollments.service_location, enrollments.service_program
+order by enrollments.service_program, days_since_contact desc) as data
+WHERE (days_since_contact is null or days_since_contact > 100)
+and admit_date < '2018-01-01'
+
+
